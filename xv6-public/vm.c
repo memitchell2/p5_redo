@@ -444,8 +444,35 @@ wunmap(uint addr) {
 
 int
 getpgdirinfo(struct pgdirinfo *pdinfo) {
-    // Implement getpgdirinfo logic here
-    return 0; // Return 0 on success, -1 on error
+    struct proc *p = myproc();
+    pde_t *pde;
+    pte_t *pte;
+    int i, j;
+    uint va, pa;
+
+    pdinfo->n_upages = 0;
+    for (i = 0, j = 0; i < NPDENTRIES && j < MAX_UPAGE_INFO; i++) {
+        if ((pde = &p->pgdir[i]) && (*pde & PTE_P)) {
+            for (va = i << PDXSHIFT; va < (i + 1) << PDXSHIFT && j < MAX_UPAGE_INFO; va += PGSIZE) {
+                pte = walkpgdir(p->pgdir, (void *)va, 0);
+                if (pte && (*pte & PTE_P) && (*pte & PTE_U)) {
+                    pa = PTE_ADDR(*pte);
+                    pdinfo->va[j] = va;
+                    pdinfo->pa[j] = pa;
+                    pdinfo->n_upages++;
+                    j++;
+                }
+            }
+        }
+    }
+
+    // Fill remaining entries with 0xFFFFFFFF for debugging purposes
+    for (; j < MAX_UPAGE_INFO; j++) {
+        pdinfo->va[j] = 0xFFFFFFFF;
+        pdinfo->pa[j] = 0xFFFFFFFF;
+    }
+
+    return 0;
 }
 
 int

@@ -14,6 +14,7 @@ struct stat;
 struct superblock;
 
 #include "wmap.h"
+#include "mmu.h"
 
 // bio.c
 void            binit(void);
@@ -169,6 +170,8 @@ void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
 extern struct spinlock tickslock;
+pte_t *walkpgdir(pde_t *pgdir, const void *va, int alloc);
+int mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm);
 
 // uart.c
 void            uartinit(void);

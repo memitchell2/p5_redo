@@ -33,7 +33,7 @@ seginit(void)
 // Return the address of the PTE in page table pgdir
 // that corresponds to virtual address va.  If alloc!=0,
 // create any required page table pages.
-static pte_t *
+pte_t *
 walkpgdir(pde_t *pgdir, const void *va, int alloc)
 {
   pde_t *pde;
@@ -58,7 +58,7 @@ walkpgdir(pde_t *pgdir, const void *va, int alloc)
 // Create PTEs for virtual addresses starting at va that refer to
 // physical addresses starting at pa. va and size might not
 // be page-aligned.
-static int
+int
 mappages(pde_t *pgdir, void *va, uint size, uint pa, int perm)
 {
   char *a, *last;
@@ -386,8 +386,8 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
   return 0;
 }
 
-int
-wmap(uint addr, int length, int flags) {
+
+int wmap(uint addr, int length, int flags) {
     struct proc *p = myproc();
     uint a;
     pte_t *pte;
@@ -430,16 +430,53 @@ wmap(uint addr, int length, int flags) {
         }
     }
 
-    // Add to process's memory map list (assuming you've defined this in proc struct)
-    // Update the process's memory map metadata
+    // Add to process's memory map list
+    if (p->n_mmaps >= MAX_MMAPS)
+        return -1; // Too many mappings
+
+    p->mmaps[p->n_mmaps].addr = addr;
+    p->mmaps[p->n_mmaps].length = length;
+    p->mmaps[p->n_mmaps].flags = flags;
+    p->mmaps[p->n_mmaps].n_loaded_pages = (flags & MAP_POPULATE) ? length / PGSIZE : 0;
+    p->n_mmaps++;
 
     return addr; // Return the starting address of the mapped region
 }
 
-int
-wunmap(uint addr) {
-    // Implement wunmap logic here
-    return 0; // Return 0 on success, -1 on error
+int wunmap(uint addr) {
+    struct proc *p = myproc();
+    pte_t *pte;
+    uint a;
+    int i, found = -1;
+
+    // Find the mapping with the given address
+    for (i = 0; i < p->n_mmaps; i++) {
+        if (p->mmaps[i].addr == addr) {
+            found = i;
+            break;
+        }
+    }
+
+    if (found == -1)
+        return -1; // No such mapping
+
+    // Unmap the pages
+    for (a = addr; a < addr + p->mmaps[found].length; a += PGSIZE) {
+        if ((pte = walkpgdir(p->pgdir, (void *)a, 0)) == 0)
+            continue;
+        if (*pte & PTE_P) {
+            kfree(P2V(PTE_ADDR(*pte)));
+            *pte = 0;
+        }
+    }
+
+    // Remove the mapping from the list
+    for (i = found; i < p->n_mmaps - 1; i++) {
+        p->mmaps[i] = p->mmaps[i + 1];
+    }
+    p->n_mmaps--;
+
+    return 0; // Success
 }
 
 int
@@ -475,15 +512,24 @@ getpgdirinfo(struct pgdirinfo *pdinfo) {
     return 0;
 }
 
-int
-getwmapinfo(struct wmapinfo *wminfo) {
-    // Implement getwmapinfo logic here
-    return 0; // Return 0 on success, -1 on error
-}
-//PAGEBREAK!
-// Blank page.
-//PAGEBREAK!
-// Blank page.
-//PAGEBREAK!
-// Blank page.
+int getwmapinfo(struct wmapinfo *wminfo) {
+    struct proc *p = myproc();
+    int i;
 
+    wminfo->total_mmaps = p->n_mmaps;
+
+    for (i = 0; i < p->n_mmaps; i++) {
+        wminfo->addr[i] = p->mmaps[i].addr;
+        wminfo->length[i] = p->mmaps[i].length;
+        wminfo->n_loaded_pages[i] = p->mmaps[i].n_loaded_pages;
+    }
+
+    return 0;
+}
+
+//PAGEBREAK!
+// Blank page.
+//PAGEBREAK!
+// Blank page.
+//PAGEBREAK!
+// Blank page.

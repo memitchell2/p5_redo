@@ -10,6 +10,16 @@ struct cpu {
   struct proc *proc;           // The process running on this cpu or null
 };
 
+struct mmap_region {
+    uint addr;       // Start address of the mapping
+    int length;      // Length of the mapping
+    int flags;       // Flags for the mapping
+    int n_loaded_pages; // Number of pages loaded (for demand paging)
+};
+
+// Add an array to store memory mappings in the proc structure
+#define MAX_MMAPS 16
+
 extern struct cpu cpus[NCPU];
 extern int ncpu;
 
@@ -36,6 +46,8 @@ enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
 struct proc {
+  struct mmap_region mmaps[MAX_MMAPS];  // Memory mappings
+  int n_mmaps;
   uint sz;                     // Size of process memory (bytes)
   pde_t* pgdir;                // Page table
   char *kstack;                // Bottom of kernel stack for this process

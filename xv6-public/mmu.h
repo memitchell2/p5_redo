@@ -1,5 +1,6 @@
-// This file contains definitions for the
-// x86 memory management unit (MMU).
+// mmu.h
+#ifndef MMU_H
+#define MMU_H
 
 // Eflags register
 #define FL_IF           0x00000200      // Interrupt Enable
@@ -102,6 +103,7 @@ struct segdesc {
 
 #ifndef __ASSEMBLER__
 typedef uint pte_t;
+typedef uint pde_t;
 
 // Task state segment format
 struct taskstate {
@@ -178,4 +180,6 @@ struct gatedesc {
   (gate).off_31_16 = (uint)(off) >> 16;                  \
 }
 
-#endif
+#endif // __ASSEMBLER__
+
+#endif // MMU_H

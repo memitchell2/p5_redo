@@ -89,3 +89,44 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+int
+sys_wmap(void) {
+    uint addr;
+    int length, flags;
+
+    if (argint(0, (int *)&addr) < 0 || argint(1, &length) < 0 || argint(2, &flags) < 0)
+        return -1;
+
+    return wmap(addr, length, flags);
+}
+
+int
+sys_getpgdirinfo(void) {
+    struct pgdirinfo *pdinfo;
+
+    if (argptr(0, (void*)&pdinfo, sizeof(*pdinfo)) < 0)
+        return -1;
+
+    return getpgdirinfo(pdinfo);
+}
+
+int
+sys_wunmap(void) {
+    uint addr;
+
+    if (argint(0, (int*)&addr) < 0)
+        return -1;
+
+    return wunmap(addr);
+}
+
+int
+sys_getwmapinfo(void) {
+    struct wmapinfo *wminfo;
+
+    if (argptr(0, (void*)&wminfo, sizeof(*wminfo)) < 0)
+        return -1;
+
+    return getwmapinfo(wminfo);
+}

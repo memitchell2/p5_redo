@@ -6,6 +6,7 @@
 #include "mmu.h"
 #include "proc.h"
 #include "elf.h"
+#include "wmap.h"
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
@@ -385,6 +386,73 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
   return 0;
 }
 
+int
+wmap(uint addr, int length, int flags) {
+    struct proc *p = myproc();
+    uint a;
+    pte_t *pte;
+    char *mem;
+
+    // Round length up to the next page boundary
+    length = PGROUNDUP(length);
+
+    // Ensure the address is within bounds if MAP_FIXED is used
+    if (flags & MAP_FIXED) {
+        if (addr < MAPBASE || addr >= KERNBASE || addr + length >= KERNBASE || addr + length < addr)
+            return -1;
+    } else {
+        // Find a free region in the address space for the mapping
+        addr = MAPBASE;
+        while (addr + length < KERNBASE) {
+            for (a = addr; a < addr + length; a += PGSIZE) {
+                if ((pte = walkpgdir(p->pgdir, (void *)a, 0)) && (*pte & PTE_P))
+                    break;
+            }
+            if (a == addr + length)
+                break;
+            addr += length;
+        }
+        if (addr + length >= KERNBASE)
+            return -1;
+    }
+
+    // If MAP_POPULATE is set, allocate physical pages immediately
+    if (flags & MAP_POPULATE) {
+        for (a = addr; a < addr + length; a += PGSIZE) {
+            mem = kalloc();
+            if (!mem)
+                return -1;
+            memset(mem, 0, PGSIZE);
+            if (mappages(p->pgdir, (char *)a, PGSIZE, V2P(mem), PTE_W | PTE_U) < 0) {
+                kfree(mem);
+                return -1;
+            }
+        }
+    }
+
+    // Add to process's memory map list (assuming you've defined this in proc struct)
+    // Update the process's memory map metadata
+
+    return addr; // Return the starting address of the mapped region
+}
+
+int
+wunmap(uint addr) {
+    // Implement wunmap logic here
+    return 0; // Return 0 on success, -1 on error
+}
+
+int
+getpgdirinfo(struct pgdirinfo *pdinfo) {
+    // Implement getpgdirinfo logic here
+    return 0; // Return 0 on success, -1 on error
+}
+
+int
+getwmapinfo(struct wmapinfo *wminfo) {
+    // Implement getwmapinfo logic here
+    return 0; // Return 0 on success, -1 on error
+}
 //PAGEBREAK!
 // Blank page.
 //PAGEBREAK!

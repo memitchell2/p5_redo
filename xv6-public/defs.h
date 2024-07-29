@@ -1,3 +1,6 @@
+#ifndef DEFS_H
+#define DEFS_H
+
 struct buf;
 struct context;
 struct file;
@@ -9,6 +12,8 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
+
+#include "wmap.h"
 
 // bio.c
 void            binit(void);
@@ -185,6 +190,13 @@ void            switchuvm(struct proc*);
 void            switchkvm(void);
 int             copyout(pde_t*, uint, void*, uint);
 void            clearpteu(pde_t *pgdir, char *uva);
+int             wmap(uint addr, int length, int flags);
+int             wunmap(uint addr);
+int             getpgdirinfo(struct pgdirinfo *pdinfo);
+int             getwmapinfo(struct wmapinfo *wminfo);
+
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+
+#endif // DEFS_H

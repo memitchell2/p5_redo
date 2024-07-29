@@ -1,3 +1,8 @@
+#ifndef USER_H
+#define USER_H
+
+#include "wmap.h"  // Include this line
+
 struct stat;
 struct rtcdate;
 
@@ -24,6 +29,13 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
+
+int getpgdirinfo(struct pgdirinfo *pdinfo);
+int wmap(uint addr, int length, int flags);
+int wunmap(uint addr);
+int getwmapinfo(struct wmapinfo *wminfo);
+
+
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);
@@ -37,3 +49,5 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+
+#endif // USER_H
